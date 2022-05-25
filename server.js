@@ -2,8 +2,12 @@ const express = require("express");
 const path = require("path");
 const app = express();
 const session = require("express-session");
-var cookieParser = require("cookie-parser");
+
+const cookieParser = require("cookie-parser");
+
 const bodyParser = require("body-parser");
+const connectDB = require("./src/db/dbconexion");
+
 require("dotenv").config();
 
 const socketio = require("socket.io");
@@ -11,13 +15,18 @@ const http = require("http");
 const server = http.createServer(app);
 const io = socketio(server);
 
+//Conexion a la BBDD
+connectDB();
+
 //Importamos los routings
 const loginRoutes = require("./src/routes/loginRoutes");
 const registerRoutes = require("./src/routes/registerRoutes");
 const roomsRoutes = require("./src/routes/roomsRoutes");
 
 /* Tratamiento de sesiones */
+app.use(cookieParser());
 const oneDay = 1000 * 60 * 60 * 24;
+app.set("trust proxy", 1);
 app.use(
   session({
     name: "sid",
@@ -27,7 +36,7 @@ app.use(
     cookie: {
       maxAge: oneDay,
       sameSite: true,
-      secure: "production",
+      secure: "true",
     },
   })
 );
@@ -50,16 +59,4 @@ app.use(roomsRoutes);
 
 server.listen(5000, () => {
   console.log("App listening.");
-});
-
-/* socket.io */
-
-io.of("/rooms").on("connection", (socket) => {
-  socket.on("playerUpdate", (msg) => {
-    console.log("Room Info updated");
-    io.of("/rooms").emit("updateRoomInfo");
-  });
-  socket.on("startGame", (msg) => {
-    console.log(msg);
-  });
 });
